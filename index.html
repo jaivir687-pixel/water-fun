@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>WATER FUN</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#7cc8ef;font-family:"Arial Black","Trebuchet MS",system-ui,sans-serif;color:#fff;user-select:none}
+#app canvas{display:block}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer;border:0;color:#fff;letter-spacing:1px}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:radial-gradient(ellipse at center,rgba(0,40,80,.25),rgba(0,20,50,.55));z-index:20}
+.screen.side{align-items:flex-start;padding-left:6vw;background:linear-gradient(90deg,rgba(0,25,60,.75),rgba(0,25,60,0) 55%)}
+.screen h2{font-size:clamp(34px,6vw,64px);text-shadow:0 5px 0 #0b4f8a,0 10px 25px rgba(0,0,0,.4)}
+.screen button{width:300px;padding:14px 0;font-size:22px;border-radius:40px;
+  background:linear-gradient(#ff5d6e,#e0203a);box-shadow:0 6px 0 #9c0f24,0 12px 20px rgba(0,0,0,.3);transition:transform .1s}
+.screen button:nth-of-type(2n){background:linear-gradient(#3aa0ff,#1560e0);box-shadow:0 6px 0 #0b3c94,0 12px 20px rgba(0,0,0,.3)}
+.screen button:hover{transform:translateY(-3px) scale(1.03)}
+.screen button:active{transform:translateY(3px)}
+.logo{font-size:clamp(56px,11vw,130px);line-height:.9;text-align:center;
+  background:linear-gradient(#ffffff 30%,#7ff3ff 60%,#1bb6d8);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 0 #0a5d9e) drop-shadow(0 14px 18px rgba(0,0,0,.35))}
+.logo span{display:block;background:linear-gradient(#fff36b,#ff9a1f);-webkit-background-clip:text;background-clip:text}
+.tag{font-size:22px;margin-bottom:10px;text-shadow:0 3px 0 #0a5d9e}
+.help{font-family:system-ui;font-weight:700;font-size:14px;opacity:.9;margin-top:10px;text-align:center}
+.splash{color:#7ff3ff;animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+.pill{position:absolute;top:18px;padding:10px 22px;border-radius:30px;font-size:24px;background:rgba(0,40,90,.55);
+  backdrop-filter:blur(6px);box-shadow:inset 0 0 0 3px rgba(255,255,255,.35)}
+#time{left:18px}#score{right:18px}
+#pauseBtn{position:absolute;right:18px;bottom:18px;pointer-events:auto;padding:12px 20px;border-radius:30px;font-size:18px;
+  background:rgba(0,40,90,.6);box-shadow:inset 0 0 0 3px rgba(255,255,255,.4)}
+#notify{position:absolute;left:50%;top:26%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px}
+.note{font-size:34px;color:#fff36b;text-shadow:0 4px 0 #b3471b,0 8px 16px rgba(0,0,0,.4);animation:note 1.4s ease-out forwards}
+.note.cp{color:#6bff9a;text-shadow:0 4px 0 #107a3a}
+@keyframes note{0%{opacity:0;transform:translateY(20px) scale(.6)}15%{opacity:1;transform:scale(1.15)}80%{opacity:1}100%{opacity:0;transform:translateY(-40px)}}
+#countdown{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:150px;color:#fff;
+  text-shadow:0 8px 0 #0a5d9e,0 16px 30px rgba(0,0,0,.4)}
+#countdown.go{color:#fff36b;text-shadow:0 8px 0 #c2410c}
+.stats{font-size:24px;display:grid;grid-template-columns:auto auto;gap:6px 30px;margin:8px 0 14px;
+  background:rgba(0,40,90,.45);padding:18px 26px;border-radius:20px}
+.stats b{color:#fff36b}
+.row{display:flex;align-items:center;gap:14px;font-size:20px}
+.row input,.row select{width:180px;font:inherit;font-size:16px}
+#fpsMeter{position:fixed;left:18px;bottom:18px;font:700 14px monospace;z-index:30;background:rgba(0,0,0,.4);padding:4px 8px;border-radius:6px}
+#touch{position:fixed;inset:auto 0 0 0;height:180px;z-index:15;pointer-events:none}
+#touch button{position:absolute;pointer-events:auto;width:70px;height:70px;border-radius:50%;font-size:26px;background:rgba(255,255,255,.25);box-shadow:inset 0 0 0 3px rgba(255,255,255,.6)}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;background:#1bb6d8;z-index:50}
+</style>
+</head>
+<body>
+<div id="loading">LOADING WATER FUN...</div>
+<div id="app"></div>
+
+<div id="hud" class="hidden">
+  <div id="time" class="pill">TIME 00:00:00</div>
+  <div id="score" class="pill">SCORE 0</div>
+  <button id="pauseBtn">❚❚ PAUSE</button>
+  <div id="notify"></div>
+  <div id="countdown"></div>
+</div>
+
+<div id="mainMenu" class="screen">
+  <h1 class="logo">WATER<span>FUN</span></h1>
+  <p class="tag">Run. Jump. Splash!</p>
+  <button data-act="play">PLAY</button>
+  <button data-act="trial">TIME TRIAL</button>
+  <button data-act="free">FREE RUN</button>
+  <button data-act="settings">SETTINGS</button>
+  <p class="help">A/D or ←/→ run · W/S depth · SPACE jump · P / ESC pause</p>
+</div>
+
+<div id="pauseMenu" class="screen hidden">
+  <h2>PAUSED</h2>
+  <button data-act="resume">RESUME</button>
+  <button data-act="restart">RESTART</button>
+  <button data-act="menu">QUIT</button>
+</div>
+
+<div id="failScreen" class="screen hidden">
+  <h2 class="splash">EPIC SPLASH!</h2>
+  <button data-act="restart">TRY AGAIN</button>
+  <button data-act="checkpoint" id="cpBtn">RESTART CHECKPOINT</button>
+  <button data-act="menu">MAIN MENU</button>
+</div>
+
+<div id="results" class="screen side hidden">
+  <h2>COURSE COMPLETE</h2>
+  <div class="stats">
+    <span>FINAL TIME</span><b id="rTime">00:00:00</b>
+    <span>BEST TIME</span><b id="rBest">--</b>
+    <span>SCORE</span><b id="rScore">0</b>
+    <span>OBSTACLES CLEARED</span><b id="rObs">0</b>
+  </div>
+  <button data-act="restart">RETRY</button>
+  <button data-act="next">NEXT COURSE</button>
+  <button data-act="menu">MAIN MENU</button>
+</div>
+
+<div id="settings" class="screen hidden">
+  <h2>SETTINGS</h2>
+  <label class="row">VOLUME <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+  <label class="row">GRAPHICS
+    <select id="quality"><option value="ultra">ULTRA</option><option value="high">HIGH</option><option value="perf">PERFORMANCE</option></select>
+  </label>
+  <label class="row">SHOW FPS <input id="fps" type="checkbox"></label>
+  <button data-act="back">BACK</button>
+</div>
+
+<div id="fpsMeter" class="hidden">60 FPS</div>
+
+<div id="touch" class="hidden">
+  <button data-k="left"  style="left:20px;bottom:50px">◀</button>
+  <button data-k="right" style="left:170px;bottom:50px">▶</button>
+  <button data-k="up"    style="left:95px;bottom:110px">▲</button>
+  <button data-k="down"  style="left:95px;bottom:0">▼</button>
+  <button data-k="jump"  style="right:30px;bottom:50px;width:100px;height:100px">JUMP</button>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
